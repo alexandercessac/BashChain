@@ -10,7 +10,7 @@ if [ ! -f "$1" ]; then
 fi
 current="$1"
 
-hash=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' $current)
+hash=$(grep -Po '(?<=proof:).+' $current)
 lvl=$(grep -Po '(?<=level:)[0-9]' $current)
 body=$(sed '/nonce:/q' $current)
 
@@ -18,7 +18,7 @@ body=$(sed '/nonce:/q' $current)
 actual=($(echo -n "$body" |md5sum))
 #todo: verify signature
 if [[ "$actual" = "$hash" && "$hash" =~ ^0{$lvl} ]]; then
- if ( gpg --verify $current ); then
+ if ( gpg --verify $current 2>&1 ); then
   #echo -e "\033[1;32m$hash\033[0m" #valid
   exit 0
  else

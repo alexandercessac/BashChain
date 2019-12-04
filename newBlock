@@ -33,14 +33,17 @@ if ! [[ $3 =~ [1-9] ]]; then
  exit 1
 fi
 
+# todo: remove hardcoded path
+pendingDir=./chainLinks/pending
+[ -d "$pendingDir" ] | mkdir -p "$pendingDir"
 
-newBlock="./chainLinks/$2"
+newBlock="$pendingDir/$2"
 
 if [ -f "$newBlock" ]; then
  echo "$newblock already exists" >&2
  exit 1
 fi
 
-echo -e "prev:$1\ncontents:$5\nlevel:$3\nminedby:$4" > "$newBlock"
-gpg --clear-sign -a -u "$4" "$newBlock"\
+echo -e "prev:$1\ncontents:$5\nlevel:$3\nminedby:$4" > "$newBlock"\
+ && gpg --clear-sign -a -u "$4" "$newBlock"\
  && mv "$newBlock.asc" "$newBlock"

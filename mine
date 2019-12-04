@@ -5,7 +5,7 @@ contentSrc=./cc
 
 #ensure fingerprint
 if [ -z "$minedby" ]; then
- read -p "enter thubprint of key to be used: " minedby
+ read -p "enter thumbprint of key to be used: " minedby
 fi
 #test key
 if ! echo 'test' | gpg --clear-sign -a -u "$minedby" >> /dev/null 2>&1 ; then
@@ -14,49 +14,88 @@ if ! echo 'test' | gpg --clear-sign -a -u "$minedby" >> /dev/null 2>&1 ; then
 fi
 
 #todo: remove hardcoded paths
-[ -d "./chainLinks" ] || mkdir "./chainLinks"
+#ensure chain directory
+chainDir="./chainLinks"
+pendingDir="$chainDir/pending"
+[ -d "$pendingDir" ] || mkdir -p "$pendingDir"
 
-if [ -z "$1" ]; then
- prev=""
- current="_"
- currentFile="./chainLinks/_"
- # create genesis block if not exists
- if ! [ -f "$currentFile" ]; then
-  ./newBlock "$prev" "$current" 3 "$minedby"  "Genesis"
- fi
+current="_"
+# create genesis block if not exists
+if [ -f "$chainDir/$current" ]; then
+ #genisis file is solved
+ currentFile="$chainDir/$current"
 else
- current="$1"
- currentFile="./chainLinks/$1"
- if ! [ -f "$current" ]; then
-  echo "could not find $current" >&2
-  exit 1
- else
-  #dont need prev?
-  prev=$(grep -Po '(?<=prev:)[A-Za-z0-9]+' $currentFile)
- fi
+ #ensure unsolved genisis file has been created
+ [ -f "$pendingDir/$current"] || ./newBlock "$current" "$current" 3 "$minedby"  "Genesis"
+ #genisis file not yet solved
+ currentFile="$pendingDir/_"
 fi
 
-while true
+#get to tip
+next=$current
+while [ -f "$chainDir/$next" ]
 do
- if ( ./solve "$currentFile" ); then
-  next=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' $currentFile)
-  if ! [ -z "$next" ]; then
-   if ! [ -f "./chainLinks/$next" ]; then
-    content=$(cat $contentSrc) #todo: read line <$contentSrc
-    if ! ( ./newBlock "$current" "$next" 4 "$minedby"  "$content" )
-    then
-     exit 1
-    fi
-   fi
-    current=$next
-    currentFile="./chainLinks/$current"
-  else
-   exit 1
-  fi
- else
+ #verify each file; exit on failure
+ if ! ./verify "$chainDir/$next" > /dev/null ; then
+  #read invalid block and exit
+  ./readChain "$next"
   exit 1
  fi
+ current=$next
+ next=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' "$chainDir/$next")
 done
+
+#create next file if current is solved
+if [ ! -z "$next" ]; then
+ if [ ! -f "$pendingDir/$next" ]; then
+  #read new content and add pending  block
+  content=$(cat $contentSrc) #todo: read line <$contentSrc
+  ./newBlock "$current" "$next" $lvl "$minedby"  "$content" || exit 1 #could not create new block
+ fi
+ current="$next"
+fi
+
+lvl=4 #todo: dynamic difficulty
+
+#todo: handle signals
+while ( ./solve "$current" )
+do
+
+ next=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' "$chainDir/$current")
+ [ -z "$next" ] && exit 1 then #if solve was successful, next should be defined
+ #read new content and add pending  block
+ content=$(cat $contentSrc) #todo: read line <$contentSrc
+ ./newBlock "$current" "$next" $lvl "$minedby"  "$content" || exit 1 #could not create new block
+ current="$next"
+
+done
+
+
+
+#while true
+#do
+# if ( ./solve "$currentFile" ); then
+#  next=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' $currentFile)
+#  [ -z "$next" ] && exit 1 then #if solve was successful, next should be defined
+#  if [ -f "./chainLinks/$next" ]; then
+#   #next block already solved
+#   new=false
+#  elif ! [ -f "./chainLinks/pending/$next" ]; then
+#   #read new content and add pending  block
+#   content=$(cat $contentSrc) #todo: read line <$contentSrc
+#   ./newBlock "$current" "$next" $lvl "$minedby"  "$content" || exit 1 #could not create new block
+#   new=true
+#  fi
+#  current=$next
+#  if $new ; then
+#   currentFile="./chainLinks/pending/$current"
+#  else
+#   currentFile="./chainLinks/$current"
+#  fi
+# else
+#  exit 1 #failed to solve
+# fi
+#done
 
 exit 0
 ##########
