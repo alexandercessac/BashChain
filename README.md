@@ -12,7 +12,7 @@ Content can be queued to be added to the chain by running the `./queueContent` s
 
 This can be achieved either by passing content as an argument:
 ```
-./queueContent "my content line 1 \
+./queueContent "my content line 1 
 and a second line"
 ```
 or by running `queueContent` with no parameters and typing your content at the prompt. 
