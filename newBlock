@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# expected file format
+#
+#prev:{name of previous block}
+#contents:{block contents}
+#level:{level of difficulty}
+#minedby:{thumbprint of signature}
+#nonce:{nonce for hash}
+#proof:{hash of the block minus the current line}
+
+usage() {
+ echo "Creates a new block to be mined"
+ echo
+ echo "ex: newblock $previous $name $level $minedby  $contents"
+ echo "\$previous should be the name of the previous block"
+ echo "\$name should be the name of the new block (the hash of the previous block)"
+ echo "\$level must be 1-9 and should indicate the level of difficulty"
+ echo "\$minedby must be the thumbprint of the signing key to be used"
+ echo "\$contents should be the content of the block"
+ echo
+ echo "Note: names should not include full paths and should just be the appropriate hash"
+}
+
+
+if [ -z "$5" ]; then
+ usage
+ exit 1
+fi
+
+if ! [[ $3 =~ [1-9] ]]; then
+ echo "\$level must be 1-9" >&2
+ exit 1
+fi
+
+
+newBlock="./chainLinks/$2"
+
+if [ -f "$newBlock" ]; then
+ echo "$newblock already exists" >&2
+ exit 1
+fi
+
+echo -e "prev:$1\ncontents:$5\nlevel:$3\nminedby:$4" > "$newBlock"
+gpg --clear-sign -a -u "$4" "$newBlock"\
+ && mv "$newBlock.asc" "$newBlock"

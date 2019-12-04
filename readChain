@@ -1,0 +1,38 @@
+#!/bin/bash
+
+current="_"
+currentFile="./chainLinks/$current"
+
+if ! [ -f $currentFile ]; then
+ echo "no chain found at ./chainLinks"
+ exit 1
+fi
+
+while true
+do
+ [ ! -f "$currentFile" ] && exit 0
+ echo #newline
+ next=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' $currentFile)
+ if [ -z "$next" ]; then
+  #current not yet solved?
+  echo -e "\033[1;33m$current\033[0m"
+  grep -Pzo '(?s)(?<=contents:).+(?=level:)' $currentFile
+  echo
+  exit 0
+ else
+  #solution exists for current
+  if ( ./verify "$currentFile" ); then
+   #current file is valid
+   echo -e "\033[1;32m$current\033[0m"
+   grep -Pzo '(?s)(?<=contents:).+(?=level:)' $currentFile
+   #echo
+   current=$next
+   currentFile="./chainLinks/$current"
+  else
+   #current file is invalid
+   echo -e "\033[1;31m$current\033[0m"
+   grep -Pzo '(?s)(?<=contents:).+(?=level:)' $currentFile
+   exit 1
+  fi
+fi
+done

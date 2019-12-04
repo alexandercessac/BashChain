@@ -1,0 +1,32 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+ echo "missing 1st arg filename"
+ exit 2
+fi
+if [ ! -f "$1" ]; then
+ echo "no file $1"
+ exit 2
+fi
+current="$1"
+
+hash=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' $current)
+lvl=$(grep -Po '(?<=level:)[0-9]' $current)
+body=$(sed '/nonce:/q' $current)
+
+#verify
+actual=($(echo -n "$body" |md5sum))
+#todo: verify signature
+if [[ "$actual" = "$hash" && "$hash" =~ ^0{$lvl} ]]; then
+ if ( gpg --verify $current ); then
+  #echo -e "\033[1;32m$hash\033[0m" #valid
+  exit 0
+ else
+  exit 1 #invalid signature
+ fi
+else
+ #todo: check if colors are supported
+ #echo -e "\033[1;31mInvalid hash for $current" >&2
+ #echo -e "\033[1;31m$hash\033[0m" #invalid
+ exit 1
+fi

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+content="$1"
+
+[ -z "$content" ] && read -p 'Enter content to be queued: ' content
+
+{ echo "$content" >> ./cc & } &
+
+echo "content queued"

@@ -1,0 +1,62 @@
+#!/bin/bash
+#todo: ensure pipe
+contentSrc=./cc
+[[ ! -p $contentSrc ]] && mkfifo $contentSrc
+
+#ensure fingerprint
+if [ -z "$minedby" ]; then
+ read -p "enter thubprint of key to be used: " minedby
+fi
+#test key
+if ! echo 'test' | gpg --clear-sign -a -u "$minedby" >> /dev/null 2>&1 ; then
+ >&2 echo "invalid signing key for $minedby"
+ exit 1
+fi
+
+#todo: remove hardcoded paths
+[ -d "./chainLinks" ] || mkdir "./chainLinks"
+
+if [ -z "$1" ]; then
+ prev=""
+ current="_"
+ currentFile="./chainLinks/_"
+ # create genesis block if not exists
+ if ! [ -f "$currentFile" ]; then
+  ./newBlock "$prev" "$current" 3 "$minedby"  "Genesis"
+ fi
+else
+ current="$1"
+ currentFile="./chainLinks/$1"
+ if ! [ -f "$current" ]; then
+  echo "could not find $current" >&2
+  exit 1
+ else
+  #dont need prev?
+  prev=$(grep -Po '(?<=prev:)[A-Za-z0-9]+' $currentFile)
+ fi
+fi
+
+while true
+do
+ if ( ./solve "$currentFile" ); then
+  next=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' $currentFile)
+  if ! [ -z "$next" ]; then
+   if ! [ -f "./chainLinks/$next" ]; then
+    content=$(cat $contentSrc) #todo: read line <$contentSrc
+    if ! ( ./newBlock "$current" "$next" 4 "$minedby"  "$content" )
+    then
+     exit 1
+    fi
+   fi
+    current=$next
+    currentFile="./chainLinks/$current"
+  else
+   exit 1
+  fi
+ else
+  exit 1
+ fi
+done
+
+exit 0
+##########

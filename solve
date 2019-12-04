@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# expected file format
+#
+#prev:{name of previous block}
+#level:{level of difficulty}
+#contents:{block contents}
+#sig:{signature of contents}
+#minedby:{thumbprint of signature}
+#nonce:{nonce for hash}
+#proof:{hash of the block minus the current line}
+
+if ! [ -f "$1" ]; then
+ echo >&2 "could not find file $1"
+ exit 1;
+fi
+
+current="$1"
+#todo: ensure file format
+#todo: implement signing and fingerprint
+
+hash=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' $current)
+nonce=$(grep -Po '(?<=nonce:)[A-Za-z0-9]+' $current)
+lvl=$(grep -Po '(?<=level:)[0-9]' $current)
+
+if [ -z "$hash" ] && [ -z "$nonce" ]; then
+ #update file with miner info
+ #sed -i 's/$(grep "^sig:" $current)/sig:$signature/' $current
+ #sed -i 's/$(grep "^minedby:" $current)/minedby:$fingerprint/' $current
+
+ #get body
+ #body=$(sed '/nonce:/q' $current)
+ body=$(sed '/-----END PGP SIGNATURE-----:/q' $current)
+
+ #solve
+ while [[ ! "$hash" =~ ^0{$lvl} ]]
+ do
+  nonce=($(echo -n "$i" |md5sum))
+  hash=($(echo -ne "$body\nnonce:$nonce" |md5sum))
+  echo -ne "\r\033[1;33m$hash\033[0m"
+  i=$((i+1))
+  #debug
+  #exit 0
+ done
+ echo -e "$body\nnonce:$nonce\nproof:$hash" > $current
+ echo -e "\r\033[1;32m$hash\033[0m" #solved
+else
+ if ( ./verify $current ); then
+  echo -e "\r\033[1;32m$hash\033[0m"
+ else
+  echo -e "\r\033[1;31m$hash\033[0m"
+  exit 1
+ fi
+fi
+
+
