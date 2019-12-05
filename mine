@@ -1,5 +1,15 @@
 #!/bin/bash
-#todo: ensure pipe
+
+#handle flags
+silent=false
+while getopts ":s" opt; do
+ case ${opt} in
+  s ) silent=true
+      ;;
+ esac
+done
+
+#ensure pipe
 contentSrc=./cc
 [[ ! -p $contentSrc ]] && mkfifo $contentSrc
 
@@ -7,9 +17,19 @@ contentSrc=./cc
 if [ -z "$minedby" ]; then
  read -p "enter thumbprint of key to be used: " minedby
 fi
+
+#attempt to import key
+if [ ! -z "$minerkey" ]; then
+ if  $silent ; then
+  echo -ne "$minerkey" | gpg --import >> /dev/null 2>&1
+ else
+  echo -ne "$minerkey" | gpg --import
+ fi
+fi
+
 #test key
 if ! echo 'test' | gpg --clear-sign -a -u "$minedby" >> /dev/null 2>&1 ; then
- >&2 echo "invalid signing key for $minedby"
+ $silent || >&2 echo "invalid signing key for $minedby"
  exit 1
 fi
 
@@ -26,7 +46,7 @@ if [ -f "$chainDir/$current" ]; then
  currentFile="$chainDir/$current"
 else
  #ensure unsolved genisis file has been created
- [ -f "$pendingDir/$current"] || ./newBlock "$current" "$current" 3 "$minedby"  "Genesis"
+ [ -f "$pendingDir/$current" ] || ./newBlock "$current" "$current" 3 "$minedby"  "Genesis"
  #genisis file not yet solved
  currentFile="$pendingDir/_"
 fi
@@ -38,7 +58,7 @@ do
  #verify each file; exit on failure
  if ! ./verify "$chainDir/$next" > /dev/null ; then
   #read invalid block and exit
-  ./readChain "$next"
+  $silent || ./readChain "$next"
   exit 1
  fi
  current=$next
@@ -55,10 +75,18 @@ if [ ! -z "$next" ]; then
  current="$next"
 fi
 
-lvl=4 #todo: dynamic difficulty
+lvl=3 #todo: dynamic difficulty
+
+function doSolve() {
+ if $silent ; then
+  ./solve "$1" >> /dev/null
+ else
+  ./solve "$1"
+ fi
+}
 
 #todo: handle signals
-while ( ./solve "$current" )
+while ( doSolve "$current" )
 do
 
  next=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' "$chainDir/$current")

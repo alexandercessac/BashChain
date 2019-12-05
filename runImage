@@ -1,0 +1,16 @@
+#!/bin/bash
+#import key
+#todo:
+
+# ensure fingerprint will be passed to container
+echo "${minedby:?Need to set minedby environment variable to the fingerprint of the key to use}"
+
+#key used for signing
+#minerkey=$(gpg --export-secret-keys -a $minedby | cat -e | sed 's/\$/\\n/g')
+#export minerkey
+
+docker run --rm -d\
+ --env minedby\
+ --env minerkey="$(gpg --export-secret-keys -a $minedby | cat -e | sed 's/\$/\\n/g')"\
+ --name bashchain\
+ miner
