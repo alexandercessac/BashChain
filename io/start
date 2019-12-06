@@ -1,0 +1,7 @@
+#!/bin/bash
+
+[ -f './done' ] && rm -f './done'
+[ -f './fin' ] && rm -f './fin'
+
+{ ./readIn & } &
+{ ./listen & } &

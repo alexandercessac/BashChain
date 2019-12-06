@@ -1,0 +1,31 @@
+#!/bin/bash
+
+#ensure 'fin' file is not present
+[ -f ./fin ] && rm -f ./fin
+
+#ensure input pipe
+[ ! -p ./in ] && mkfifo ./in
+
+while true
+do
+ msg=$(cat ./in)
+
+ info=$(echo -e "$msg" | sed -n '1{p;q}')
+
+ [ "$info" = "die" ] && touch ./fin; exit 0
+
+ ip=$(echo -e "$msg" | sed -n '2{p;q}')
+ port=$(echo -e "$msg" | sed -n '3{p;q}')
+ content=$(echo -e "$msg" | tail -n +4)
+
+ case "$info" in
+  "sendtip" ) echo "user at $ip:$port requests latest block" >> output;; #todo
+  "recblock" ) echo -e "user at $ip:$port is sending a block\n\n$content" >> output;; #todo
+  "sendblock" ) echo "user at $ip:$port is requesting a specific block: $content" >> output;;
+  "recvcontent" ) echo "user at $ip:port is sending content" >> output && ../queueContent "$content";;
+  "test" ) echo -e "user at $ip:$port is sending the following message:\n$content" >> output;;
+  * ) echo "$msg" >> output;;
+ esac
+
+
+done

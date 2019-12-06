@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+ echo "param 1 (ipaddress) is required"
+ exit 1
+fi
+
+if [ -z "$2" ]; then
+ echo "param 2 (port) is required"
+ exit 1
+fi
+
+if [ -z "$3" ]; then
+ echo "param 3 (content) is required"
+ exit 1
+fi
+
+# use netcat to send content
+echo -ne "$3" | netcat $1 $2 -q 0

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+[ -f './done' ] && rm -r './done'
+
+[ -p ./in ] || mkfifo ./in
+
+while [ ! -f ./fin ]
+do
+
+ # ping lisener in 5s
+ { sleep 5; echo | netcat localhost 17770 -q 0 & } &
+ #listen at port
+ content=$(netcat -l -p 17770)
+ #write any content to pipe
+ [ ! -z "$content" ] && echo "$content" >> ./in
+
+done
+touch './done'
