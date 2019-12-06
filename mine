@@ -46,7 +46,7 @@ if [ -f "$chainDir/$current" ]; then
  currentFile="$chainDir/$current"
 else
  #ensure unsolved genisis file has been created
- [ -f "$pendingDir/$current" ] || ./newBlock "$current" "$current" 3 "$minedby"  "Genesis"
+ [ -f "$pendingDir/$current" ] || ./newBlock "$current" "$current" 2 "$minedby"  "Genesis"
  #genisis file not yet solved
  currentFile="$pendingDir/_"
 fi
@@ -65,17 +65,17 @@ do
  next=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' "$chainDir/$next")
 done
 
+lvl=4 #todo: dynamic difficulty
+
 #create next file if current is solved
 if [ ! -z "$next" ]; then
  if [ ! -f "$pendingDir/$next" ]; then
   #read new content and add pending  block
   content=$(cat $contentSrc) #todo: read line <$contentSrc
-  ./newBlock "$current" "$next" $lvl "$minedby"  "$content" || exit 1 #could not create new block
+  ./newBlock "$current" "$next" "$lvl" "$minedby" "$content" || exit 1 #could not create new block
  fi
  current="$next"
 fi
-
-lvl=3 #todo: dynamic difficulty
 
 function doSolve() {
  if $silent ; then
@@ -89,41 +89,19 @@ function doSolve() {
 while ( doSolve "$current" )
 do
 
+ #read hash of solved block
  next=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' "$chainDir/$current")
- [ -z "$next" ] && exit 1 then #if solve was successful, next should be defined
- #read new content and add pending  block
- content=$(cat $contentSrc) #todo: read line <$contentSrc
- ./newBlock "$current" "$next" $lvl "$minedby"  "$content" || exit 1 #could not create new block
+ [ -z "$next" ] && exit 1 #if solve was successful, next should be defined
+
+ #read new content
+ content=$(cat $contentSrc)
+
+ #create new block with content
+ ./newBlock "$current" "$next" "$lvl" "$minedby"  "$content" || exit 1
+
  current="$next"
 
 done
-
-
-
-#while true
-#do
-# if ( ./solve "$currentFile" ); then
-#  next=$(grep -Po '(?<=proof:)[A-Za-z0-9]+' $currentFile)
-#  [ -z "$next" ] && exit 1 then #if solve was successful, next should be defined
-#  if [ -f "./chainLinks/$next" ]; then
-#   #next block already solved
-#   new=false
-#  elif ! [ -f "./chainLinks/pending/$next" ]; then
-#   #read new content and add pending  block
-#   content=$(cat $contentSrc) #todo: read line <$contentSrc
-#   ./newBlock "$current" "$next" $lvl "$minedby"  "$content" || exit 1 #could not create new block
-#   new=true
-#  fi
-#  current=$next
-#  if $new ; then
-#   currentFile="./chainLinks/pending/$current"
-#  else
-#   currentFile="./chainLinks/$current"
-#  fi
-# else
-#  exit 1 #failed to solve
-# fi
-#done
 
 exit 0
 ##########

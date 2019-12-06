@@ -13,4 +13,5 @@ docker run --rm -d\
  --env minedby\
  --env minerkey="$(gpg --export-secret-keys -a $minedby | cat -e | sed 's/\$/\\n/g')"\
  --name bashchain\
+ -p 17770:17770\
  miner

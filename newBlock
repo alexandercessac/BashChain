@@ -24,6 +24,7 @@ usage() {
 
 
 if [ -z "$5" ]; then
+ echo "$@"
  usage
  exit 1
 fi

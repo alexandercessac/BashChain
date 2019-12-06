@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd io &&\
+ ./start &&\
+ cd .. &&\
+ ./mine -s
+
+exit $?

@@ -1,18 +1,15 @@
 #!/bin/bash
 
-[ -f './done' ] && rm -r './done'
+#todo: cleanup any previous listeners
 
+#write pid of process
+echo -n "$$" > ./pid
+#ensure pipe
 [ -p ./in ] || mkfifo ./in
 
-while [ ! -f ./fin ]
+# stop if pid file has been altered
+while [ -f ./pid ] && [ "$(cat ./pid)" = "$$" ]
 do
-
- # ping lisener in 5s
- { sleep 5; echo | netcat localhost 17770 -q 0 & } &
- #listen at port
- content=$(netcat -l -p 17770)
- #write any content to pipe
- [ ! -z "$content" ] && echo "$content" >> ./in
-
+ #listen and write requests to pipe
+ netcat -l -p 17770 >> ./in
 done
-touch './done'

@@ -1,7 +1,10 @@
 #!/bin/bash
 
-#ensure 'fin' file is not present
-[ -f ./fin ] && rm -f ./fin
+#remove ./.listening file
+[ -f ./.listening ] && rm -f ./.listening
+
+#start listener
+{ ./listen & } &
 
 #ensure input pipe
 [ ! -p ./in ] && mkfifo ./in
@@ -10,21 +13,33 @@ while true
 do
  msg=$(cat ./in)
 
+ #read first line [info]
  info=$(echo -e "$msg" | sed -n '1{p;q}')
 
- [ "$info" = "die" ] && touch ./fin; exit 0
+ #check for die message
+ if [ "$info" = "die" ]; then
+  #remove .listening file
+  [ -f ./.listening  ] && rm -f ./.listening
+  #exit
+  exit 0
+ fi
 
+ #read second line [ip of sender]
  ip=$(echo -e "$msg" | sed -n '2{p;q}')
+ #read third line [port where sender is listening]
  port=$(echo -e "$msg" | sed -n '3{p;q}')
+ #read the fourth line and on [content]
  content=$(echo -e "$msg" | tail -n +4)
 
  case "$info" in
-  "sendtip" ) echo "user at $ip:$port requests latest block" >> output;; #todo
-  "recblock" ) echo -e "user at $ip:$port is sending a block\n\n$content" >> output;; #todo
-  "sendblock" ) echo "user at $ip:$port is requesting a specific block: $content" >> output;;
-  "recvcontent" ) echo "user at $ip:port is sending content" >> output && ../queueContent "$content";;
-  "test" ) echo -e "user at $ip:$port is sending the following message:\n$content" >> output;;
-  * ) echo "$msg" >> output;;
+  "sendtip" ) echo "user at $ip:$port requests latest block";; #todo
+  "recblock" ) echo -e "user at $ip:$port is sending a block\n\n$content";; #todo
+  "sendblock" ) echo "user at $ip:$port is requesting a specific block: $content";; #todo
+  "recvcontent" ) echo "user at $ip:port is sending content"
+                  pushd ../ >> /dev/null && ./queueContent "$content" >> /dev/null
+                  popd >> /dev/null;;
+  "test" ) echo -e "user at $ip:$port is sending the following message:\n$content";;
+  * ) echo -e "$msg";;
  esac
 
 

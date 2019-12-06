@@ -18,7 +18,7 @@ body=$(sed '/nonce:/q' $current)
 actual=($(echo -n "$body" |md5sum))
 #todo: verify signature
 if [[ "$actual" = "$hash" && "$hash" =~ ^0{$lvl} ]]; then
- if ( gpg --verify $current 2>&1 ); then
+ if gpg --verify $current 2>&1 ; then
   #echo -e "\033[1;32m$hash\033[0m" #valid
   exit 0
  else

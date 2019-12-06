@@ -41,7 +41,7 @@ do
    ./verify "$currentFile" >> /dev/null
   fi
 
-  if [ $? ] ; then
+  if [ $? -eq 0 ] ; then
    #current file is valid
    echo -e "\033[1;32m$current\033[0m"
    grep -Pzo '(?s)(?<=contents:).+(?=level:)' $currentFile
@@ -52,6 +52,7 @@ do
    #current file is invalid
    echo -e "\033[1;31m$current\033[0m"
    grep -Pzo '(?s)(?<=contents:).+(?=level:)' $currentFile
+   echo -e "\033[1;31m________________________________\033[0m"
    exit 1
   fi
 fi

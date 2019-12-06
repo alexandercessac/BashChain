@@ -1,10 +1,20 @@
-FROM debian
+FROM minerbase
 
-#todo: be more selective
-COPY ./mine ./solve ./verify ./newBlock ./readChain ./queueContent ./
+COPY ./containerMine\
+ ./mine\
+ ./solve\
+ ./verify\
+ ./newBlock\
+ ./readChain\
+ ./queueContent\
+ ./
 
-RUN apt-get update -y && apt-get -y --allow-unauthenticated install gnupg
+COPY ./io/listen\
+ ./io/readIn\
+ ./io/send\
+ ./io/start\
+ ./io/
 
-ENTRYPOINT ["./mine", "-s"]
+ENTRYPOINT ["./containerMine"]
 
 #ENTRYPOINT sh
